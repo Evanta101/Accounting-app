@@ -47,6 +47,7 @@ export const ClothStockView: React.FC<ClothStockViewProps> = ({
   const [customTypeLabel, setCustomTypeLabel] = useState<string>('');
   const [fabricCategory, setFabricCategory] = useState<FabricCategory>('Silk');
   const [purchaseCost, setPurchaseCost] = useState<number | ''>(2500);
+  const [quantity, setQuantity] = useState<number>(1);
   const [purchaseDate, setPurchaseDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [purchaseLocation, setPurchaseLocation] = useState<string>('Surat Wholesale Market');
   const [selectedVendorId, setSelectedVendorId] = useState<string>('');
@@ -62,6 +63,7 @@ export const ClothStockView: React.FC<ClothStockViewProps> = ({
     setCustomTypeLabel('');
     setFabricCategory('Silk');
     setPurchaseCost(2500);
+    setQuantity(1);
     setPurchaseDate(new Date().toISOString().split('T')[0]);
     setPurchaseLocation('Surat Wholesale Market');
     setSelectedVendorId('');
@@ -77,6 +79,7 @@ export const ClothStockView: React.FC<ClothStockViewProps> = ({
     setCustomTypeLabel(item.customTypeLabel || '');
     setFabricCategory(item.fabricCategory);
     setPurchaseCost(item.purchaseCost);
+    setQuantity(item.quantity !== undefined ? item.quantity : 1);
     setPurchaseDate(item.purchaseDate);
     setPurchaseLocation(item.purchaseLocation);
     setSelectedVendorId(item.vendorId || '');
@@ -107,6 +110,7 @@ export const ClothStockView: React.FC<ClothStockViewProps> = ({
     if (hasError) return;
 
     const vendor = vendors.find(v => v.id === selectedVendorId);
+    const qty = Math.max(0, quantity || 1);
 
     const newItem: ClothItem = {
       id: editingId || `cloth-${Date.now()}`,
@@ -118,8 +122,8 @@ export const ClothStockView: React.FC<ClothStockViewProps> = ({
       purchaseLocation,
       vendorId: selectedVendorId || undefined,
       vendorName: vendor ? vendor.shopName : undefined,
-      quantity: 1,
-      status: 'In Stock',
+      quantity: qty,
+      status: qty > 0 ? 'In Stock' : 'Sold',
       notes,
       createdAt: new Date().toISOString(),
     };
@@ -301,7 +305,7 @@ export const ClothStockView: React.FC<ClothStockViewProps> = ({
                     <span className={`text-[10px] px-2.5 py-0.5 rounded-full ${
                       isInStock ? 'pill-success' : 'pill-neutral'
                     }`}>
-                      {cloth.status}
+                      {isInStock ? `In Stock (${cloth.quantity !== undefined ? cloth.quantity : 1})` : 'Sold (0 left)'}
                     </span>
                   </div>
 
@@ -535,7 +539,7 @@ export const ClothStockView: React.FC<ClothStockViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-[11px] font-semibold tracking-wider text-[#8E8E93] uppercase block mb-1">
                     Purchase Cost (₹) *
@@ -555,6 +559,20 @@ export const ClothStockView: React.FC<ClothStockViewProps> = ({
                   {costError && (
                     <p className="text-[12px] text-[#D9552C] mt-1 animate-fade-up">{costError}</p>
                   )}
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold tracking-wider text-[#8E8E93] uppercase block mb-1">
+                    Stock Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value ? Math.max(1, parseInt(e.target.value, 10)) : 1)}
+                    className="w-full bg-[#F2F2F7] border border-[#D2D2D7] px-3.5 py-2.5 rounded-xl font-semibold text-[#1D1D1F] focus:ring-2 focus:ring-[#C1553D] focus:outline-none"
+                  />
                 </div>
 
                 <div>

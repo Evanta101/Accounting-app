@@ -8,12 +8,9 @@ import {
   Users, 
   TrendingUp, 
   PlusCircle, 
-  RotateCcw,
   FileSpreadsheet
 } from 'lucide-react';
 import { BusinessSummary } from '../types';
-import { ConfirmPopover } from './ConfirmPopover';
-import { useToast } from '../context/ToastContext';
 
 interface NavbarProps {
   activeTab: string;
@@ -36,7 +33,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenBackupModal,
   onResetData,
 }) => {
-  const { showToast } = useToast();
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
     { id: 'cloths', label: 'Cloth Stock', icon: ShoppingBag },
@@ -112,24 +108,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>New Sale</span>
           </button>
 
-          <ConfirmPopover
-            title="Reset all ledger data back to sample values?"
-            confirmText="Reset Data"
-            confirmVariant="danger"
-            align="right"
-            position="bottom"
-            onConfirm={() => {
-              onResetData();
-              showToast("Ledger data reset to sample values", "info");
-            }}
-          >
-            <button
-              className="text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] p-2 rounded-xl border border-[#D2D2D7] transition cursor-pointer"
-              title="Reset to Sample Data"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </ConfirmPopover>
         </div>
       </div>
 

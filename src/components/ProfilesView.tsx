@@ -89,7 +89,7 @@ export const ProfilesView: React.FC<ProfilesViewProps> = ({
     setEditingCustId(null);
     setCustName('');
     setCustPhone('');
-    setCustCity('Local');
+    setCustCity('');
     setCustAddress('');
     setCustNotes('');
     setCustNameError('');

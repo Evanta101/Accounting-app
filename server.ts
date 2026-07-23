@@ -247,8 +247,9 @@ function calculateSummary(): BusinessSummary {
   const netProfit = totalRevenue - totalClothCostSold - totalPaintCostAllocated - totalMiscExpenses;
   const profitMarginPct = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
-  const inStockCloths = cloths.filter(c => c.status === 'In Stock');
-  const inStockClothValue = inStockCloths.reduce((acc, c) => acc + (c.purchaseCost || 0), 0);
+  const inStockCloths = cloths.filter(c => c.status === 'In Stock' && (c.quantity === undefined || c.quantity > 0));
+  const inStockClothValue = inStockCloths.reduce((acc, c) => acc + (c.purchaseCost || 0) * (c.quantity !== undefined ? c.quantity : 1), 0);
+  const inStockClothCount = inStockCloths.reduce((acc, c) => acc + (c.quantity !== undefined ? c.quantity : 1), 0);
   
   const pendingSales = sales.filter(s => (s.sellingPrice - (s.amountReceived || 0)) > 0);
   const totalPendingCustomerDues = pendingSales.reduce((acc, s) => {
@@ -267,7 +268,7 @@ function calculateSummary(): BusinessSummary {
     netProfit,
     profitMarginPct,
     inStockClothValue,
-    inStockClothCount: inStockCloths.length,
+    inStockClothCount,
     totalPendingCustomerDues,
     pendingDuesCount,
     activePaintsCount,
@@ -355,11 +356,32 @@ async function startServer() {
       sale.createdAt = new Date().toISOString();
     }
 
-    // 1. Check cloth linkage
+    // Check if this is an update to an existing sale and restore old stock quantity if needed
+    const existingIdx = sales.findIndex(s => s.id === sale.id);
+    if (existingIdx !== -1) {
+      const oldSale = sales[existingIdx];
+      if (!oldSale.isCustomerCloth && oldSale.linkedClothId) {
+        const oldCloth = cloths.find(c => c.id === oldSale.linkedClothId);
+        if (oldCloth) {
+          oldCloth.quantity = (oldCloth.quantity !== undefined ? oldCloth.quantity : 0) + 1;
+          if (oldCloth.quantity > 0) {
+            oldCloth.status = 'In Stock';
+          }
+        }
+      }
+    }
+
+    // 1. Check cloth linkage for new or updated sale
     if (!sale.isCustomerCloth && sale.linkedClothId) {
       const cloth = cloths.find(c => c.id === sale.linkedClothId);
       if (cloth) {
-        cloth.status = 'Sold';
+        const currentQty = cloth.quantity !== undefined ? cloth.quantity : 1;
+        cloth.quantity = Math.max(0, currentQty - 1);
+        if (cloth.quantity === 0) {
+          cloth.status = 'Sold';
+        } else {
+          cloth.status = 'In Stock';
+        }
         sale.clothPurchaseCost = cloth.purchaseCost;
         sale.clothTypeSnapshot = `${cloth.clothType} (${cloth.fabricCategory})`;
         sale.fabricCategorySnapshot = cloth.fabricCategory;
@@ -402,9 +424,8 @@ async function startServer() {
     }
 
     // Add or update sale in list
-    const idx = sales.findIndex(s => s.id === sale.id);
-    if (idx !== -1) {
-      sales[idx] = sale;
+    if (existingIdx !== -1) {
+      sales[existingIdx] = sale;
     } else {
       sales.unshift(sale);
     }
@@ -425,7 +446,10 @@ async function startServer() {
     if (sale && !sale.isCustomerCloth && sale.linkedClothId) {
       const cloth = cloths.find(c => c.id === sale.linkedClothId);
       if (cloth) {
-        cloth.status = 'In Stock';
+        cloth.quantity = (cloth.quantity !== undefined ? cloth.quantity : 0) + 1;
+        if (cloth.quantity > 0) {
+          cloth.status = 'In Stock';
+        }
       }
     }
     sales = sales.filter(s => s.id !== req.params.id);

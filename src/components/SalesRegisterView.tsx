@@ -94,29 +94,45 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
   // Quick Customer Create inline
   const [showInlineNewCustomer, setShowInlineNewCustomer] = useState<boolean>(false);
   const [newCustPhone, setNewCustPhone] = useState<string>('');
-  const [newCustCity, setNewCustCity] = useState<string>('Local');
+  const [newCustCity, setNewCustCity] = useState<string>('');
+  const [newCustAddress, setNewCustAddress] = useState<string>('');
 
   // Inline validation errors
   const [priceError, setPriceError] = useState<string>('');
   const [customerError, setCustomerError] = useState<string>('');
 
-  const inStockCloths = cloths.filter(c => c.status === 'In Stock' || c.id === selectedClothId);
+  const inStockCloths = cloths.filter(c => (c.status === 'In Stock' && (c.quantity === undefined || c.quantity > 0)) || c.id === selectedClothId);
 
   const openFormModal = () => {
     setEditingSaleId(null);
     setIsCustomerCloth(false);
-    setSelectedClothId(inStockCloths[0]?.id || '');
-    setSelectedCustomerId(customers[0]?.id || '');
-    if (customers[0]) {
-      setCustomerNameInput(customers[0].name);
-      setLocationInput(customers[0].city);
+    const availableCloths = cloths.filter(c => c.status === 'In Stock' && (c.quantity === undefined || c.quantity > 0));
+    setSelectedClothId(availableCloths[0]?.id || '');
+    
+    // Default customer selection or blank
+    if (customers.length > 0) {
+      const initialCust = customers[0];
+      setSelectedCustomerId(initialCust.id);
+      setCustomerNameInput(initialCust.name);
+      const locStr = [initialCust.address, initialCust.city].filter(Boolean).join(', ') || initialCust.city || '';
+      setLocationInput(locStr);
+    } else {
+      setSelectedCustomerId('');
+      setCustomerNameInput('');
+      setLocationInput('');
     }
+
+    setShowInlineNewCustomer(false);
+    setNewCustPhone('');
+    setNewCustCity('');
+    setNewCustAddress('');
+
     setSellingPrice(4500);
     setSaleDate(new Date().toISOString().split('T')[0]);
     setSelectedPaintIds([]);
     setPaintsToMarkFinished([]);
     setPaymentStatus('Paid');
-    setAmountReceived(4500);
+    setAmountReceived(4500); // Defaults to selling price when Fully Paid
     setPaymentMode('UPI');
     setNotes('');
     setPriceError('');
@@ -152,26 +168,74 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
 
   // Sync customer details when selecting existing customer
   const handleCustomerSelect = (id: string) => {
+    if (id === 'NEW') {
+      // Clear fields completely for brand new customer entry
+      setSelectedCustomerId('');
+      setCustomerNameInput('');
+      setNewCustPhone('');
+      setNewCustCity('');
+      setNewCustAddress('');
+      setLocationInput('');
+      setShowInlineNewCustomer(true);
+      return;
+    }
+
     setSelectedCustomerId(id);
+    setShowInlineNewCustomer(false);
     const cust = customers.find(c => c.id === id);
     if (cust) {
       setCustomerNameInput(cust.name);
-      setLocationInput(cust.city);
+      // Auto-fill address & city into locationInput
+      const locStr = [cust.address, cust.city].filter(Boolean).join(', ') || cust.city || cust.address || '';
+      setLocationInput(locStr);
+    } else {
+      setCustomerNameInput('');
+      setLocationInput('');
+    }
+  };
+
+  // Auto-amount for selling price changes
+  const handleSellingPriceChange = (val: number | '') => {
+    setSellingPrice(val);
+    if (val !== '' && Number(val) > 0) setPriceError('');
+    if (paymentStatus === 'Paid') {
+      setAmountReceived(val);
+    }
+  };
+
+  // Auto-amount for payment status changes
+  const handlePaymentStatusChange = (status: PaymentStatus) => {
+    setPaymentStatus(status);
+    if (status === 'Paid') {
+      setAmountReceived(sellingPrice !== '' ? sellingPrice : 0);
+    } else if (status === 'Pending') {
+      setAmountReceived(0);
     }
   };
 
   const handleSaveInlineCustomer = () => {
-    if (!customerNameInput.trim()) return;
+    if (!customerNameInput.trim()) {
+      setCustomerError('Please enter customer name');
+      return;
+    }
+    const finalCity = newCustCity.trim() || 'Local';
+    const finalAddress = newCustAddress.trim();
     const newCust: CustomerProfile = {
       id: `cust-${Date.now()}`,
       name: customerNameInput.trim(),
-      phone: newCustPhone || 'N/A',
-      city: newCustCity || locationInput || 'Local',
+      phone: newCustPhone.trim() || 'N/A',
+      city: finalCity,
+      address: finalAddress,
       createdAt: new Date().toISOString(),
     };
     onAddCustomer(newCust);
     setSelectedCustomerId(newCust.id);
+    
+    // Auto-fill location with newly saved address & city
+    const locStr = [finalAddress, finalCity].filter(Boolean).join(', ') || finalCity;
+    setLocationInput(locStr);
     setShowInlineNewCustomer(false);
+    showToast(`Saved new profile for ${newCust.name} with address`, 'success');
   };
 
   const togglePaintSelection = (pId: string) => {
@@ -211,12 +275,21 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
 
     if (hasError) return;
 
+    let finalClothId = selectedClothId;
     let clothCost = 0;
     let clothTypeSnap = "Customer's Own Cloth";
     let fabricSnap = "Custom";
 
     if (!isCustomerCloth) {
-      const cloth = cloths.find(c => c.id === selectedClothId);
+      if (inStockCloths.length === 0) {
+        showToast("No in-stock studio cloths available in inventory. Please switch to Customer's Own Fabric or add cloth purchase stock first.", "error");
+        return;
+      }
+      if (!finalClothId || !cloths.some(c => c.id === finalClothId)) {
+        finalClothId = inStockCloths[0].id;
+        setSelectedClothId(finalClothId);
+      }
+      const cloth = cloths.find(c => c.id === finalClothId);
       if (cloth) {
         clothCost = cloth.purchaseCost;
         clothTypeSnap = `${cloth.clothType} (${cloth.fabricCategory})`;
@@ -228,7 +301,7 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
       id: editingSaleId || `sale-${Date.now()}`,
       date: saleDate,
       isCustomerCloth,
-      linkedClothId: !isCustomerCloth ? selectedClothId : undefined,
+      linkedClothId: !isCustomerCloth ? finalClothId : undefined,
       clothTypeSnapshot: clothTypeSnap,
       fabricCategorySnapshot: fabricSnap,
       customerId: selectedCustomerId || 'cust-direct',
@@ -547,7 +620,7 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
                       >
                         {inStockCloths.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.clothType} ({c.fabricCategory}) — Cost: ₹{c.purchaseCost}
+                            {c.clothType} ({c.fabricCategory}) — Cost: ₹{c.purchaseCost} [Stock Qty: {c.quantity !== undefined ? c.quantity : 1}]
                           </option>
                         ))}
                       </select>
@@ -562,10 +635,16 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
                   <label className="text-[11px] font-semibold tracking-wider text-[#8E8E93] uppercase">Customer Details</label>
                   <button
                     type="button"
-                    onClick={() => setShowInlineNewCustomer(!showInlineNewCustomer)}
-                    className="text-xs font-medium text-[#C1553D] hover:underline cursor-pointer"
+                    onClick={() => {
+                      if (!showInlineNewCustomer) {
+                        handleCustomerSelect('NEW');
+                      } else {
+                        setShowInlineNewCustomer(false);
+                      }
+                    }}
+                    className="text-xs font-semibold text-[#C1553D] hover:underline cursor-pointer flex items-center space-x-1"
                   >
-                    {showInlineNewCustomer ? 'Select Existing Customer' : '+ New Customer'}
+                    <span>{showInlineNewCustomer ? 'Select Existing Customer' : '+ New Blank Customer'}</span>
                   </button>
                 </div>
 
@@ -578,6 +657,7 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
                         className="w-full bg-[#F2F2F7] border border-[#D2D2D7] px-3.5 py-2.5 rounded-xl font-medium focus:ring-2 focus:ring-[#C1553D] focus:outline-none"
                       >
                         <option value="">-- Choose Customer --</option>
+                        <option value="NEW" className="font-bold text-[#C1553D]">+ Enter New Customer Profile...</option>
                         {customers.map((cust) => (
                           <option key={cust.id} value={cust.id}>
                             {cust.name} ({cust.city})
@@ -589,7 +669,7 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
                     <div>
                       <input
                         type="text"
-                        placeholder="Location / City"
+                        placeholder="Address / City"
                         value={locationInput}
                         onChange={(e) => setLocationInput(e.target.value)}
                         className="w-full bg-[#F2F2F7] border border-[#D2D2D7] px-3.5 py-2.5 rounded-xl focus:ring-2 focus:ring-[#C1553D] focus:outline-none"
@@ -598,13 +678,19 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
                   </div>
                 ) : (
                   <div className="p-4 bg-[#F2F2F7] rounded-2xl border border-[#E5E5EA] space-y-3">
-                    <div className="text-[11px] font-semibold tracking-wider text-[#8E8E93] uppercase">New Customer Profile</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[11px] font-semibold tracking-wider text-[#C1553D] uppercase">New Customer Profile</div>
+                      <span className="text-[11px] text-[#6E6E73]">Fields are cleared automatically</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
                         type="text"
-                        placeholder="Customer Name"
+                        placeholder="Customer Name *"
                         value={customerNameInput}
-                        onChange={(e) => setCustomerNameInput(e.target.value)}
+                        onChange={(e) => {
+                          setCustomerNameInput(e.target.value);
+                          if (e.target.value) setCustomerError('');
+                        }}
                         className="bg-white border border-[#D2D2D7] px-3 py-2 rounded-xl focus:ring-2 focus:ring-[#C1553D] focus:outline-none"
                       />
                       <input
@@ -616,18 +702,28 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
                       />
                       <input
                         type="text"
+                        placeholder="Street / Area Address"
+                        value={newCustAddress}
+                        onChange={(e) => setNewCustAddress(e.target.value)}
+                        className="bg-white border border-[#D2D2D7] px-3 py-2 rounded-xl focus:ring-2 focus:ring-[#C1553D] focus:outline-none"
+                      />
+                      <input
+                        type="text"
                         placeholder="City"
                         value={newCustCity}
                         onChange={(e) => setNewCustCity(e.target.value)}
                         className="bg-white border border-[#D2D2D7] px-3 py-2 rounded-xl focus:ring-2 focus:ring-[#C1553D] focus:outline-none"
                       />
                     </div>
+                    {customerError && (
+                      <p className="text-[12px] text-[#D9552C]">{customerError}</p>
+                    )}
                     <button
                       type="button"
                       onClick={handleSaveInlineCustomer}
-                      className="btn-primary text-xs font-medium px-3.5 py-1.5 rounded-xl cursor-pointer"
+                      className="btn-primary text-xs font-medium px-4 py-2 rounded-xl cursor-pointer"
                     >
-                      Save Profile
+                      Save Profile & Auto-fill Address
                     </button>
                   </div>
                 )}
@@ -643,10 +739,7 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
                     type="number"
                     placeholder="4500"
                     value={sellingPrice}
-                    onChange={(e) => {
-                      setSellingPrice(e.target.value ? Number(e.target.value) : '');
-                      if (e.target.value && Number(e.target.value) > 0) setPriceError('');
-                    }}
+                    onChange={(e) => handleSellingPriceChange(e.target.value ? Number(e.target.value) : '')}
                     className={`w-full bg-[#F2F2F7] border px-3.5 py-2.5 rounded-xl font-semibold text-[#1D1D1F] transition ${
                       priceError ? 'border-[#D9552C] focus:ring-[#D9552C]' : 'border-[#D2D2D7] focus:ring-[#C1553D]'
                     }`}
@@ -728,7 +821,7 @@ export const SalesRegisterView: React.FC<SalesRegisterViewProps> = ({
                   <label className="text-[11px] font-semibold tracking-wider text-[#8E8E93] uppercase block mb-1">Status</label>
                   <select
                     value={paymentStatus}
-                    onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
+                    onChange={(e) => handlePaymentStatusChange(e.target.value as PaymentStatus)}
                     className="w-full bg-[#F2F2F7] border border-[#D2D2D7] px-3.5 py-2.5 rounded-xl font-medium focus:ring-2 focus:ring-[#C1553D] focus:outline-none"
                   >
                     <option value="Paid">Fully Paid</option>
