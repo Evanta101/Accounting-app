@@ -6,7 +6,6 @@ import {
   RefreshCw, 
   Upload, 
   CheckCircle2, 
-  ShieldCheck, 
   X,
   Clock,
   Database
@@ -145,20 +144,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
         <div className="p-6 space-x-0 space-y-6 max-h-[80vh] overflow-y-auto">
           
-          {/* Key Assurance Box */}
-          <div className="bg-[#F4F9F6] border border-[#CDE5D8] rounded-xl p-4 flex items-start space-x-3">
-            <ShieldCheck className="w-5 h-5 text-[#2F8F6E] shrink-0 mt-0.5" />
-            <div className="text-xs text-[#1D6C51] space-y-1">
-              <p className="font-semibold text-sm">Will you lose data when updating code?</p>
-              <p className="leading-relaxed">
-                <strong>No, never!</strong> All your business records (Sales, Cloth Stock, Paints, Expenses, Profiles) are permanently stored in the <code className="bg-[#E2F0E8] px-1.5 py-0.5 rounded font-mono font-bold text-[#1D6C51]">./data/</code> folder on the server.
-              </p>
-              <p className="leading-relaxed">
-                When you or developers update the app code, the <code className="bg-[#E2F0E8] px-1.5 py-0.5 rounded font-mono font-bold text-[#1D6C51]">data/</code> directory and Excel backups are preserved 100% untouched. You will never have to start over.
-              </p>
-            </div>
-          </div>
-
           {/* Quick Actions */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
