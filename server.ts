@@ -20,7 +20,13 @@ import {
   initialVendors 
 } from './src/server/sampleData';
 
-const DATA_FILE = path.join(process.cwd(), 'studio_data.json');
+const DATA_DIR = path.join(process.cwd(), 'data');
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+const DATA_FILE = path.join(DATA_DIR, 'studio_data.json');
+const OLD_DATA_FILE = path.join(process.cwd(), 'studio_data.json');
 
 // In-memory data store with file persistence
 let cloths: ClothItem[] = [];
@@ -32,8 +38,9 @@ let vendors: VendorProfile[] = [];
 
 function loadData() {
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+    const targetFile = fs.existsSync(DATA_FILE) ? DATA_FILE : (fs.existsSync(OLD_DATA_FILE) ? OLD_DATA_FILE : null);
+    if (targetFile) {
+      const raw = fs.readFileSync(targetFile, 'utf-8');
       const parsed = JSON.parse(raw);
       cloths = parsed.cloths || initialCloths;
       paints = parsed.paints || initialPaints;
