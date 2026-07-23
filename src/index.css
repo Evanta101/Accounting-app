@@ -1,0 +1,285 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #f2f2f5;
+    color: #1d1d1f;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Inter, system-ui, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Header Woven Thread Subtle Signature Pattern */
+.woven-header-bg {
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 16 L32 16 M16 0 L16 32 M0 0 L32 32 M32 0 L0 32' stroke='%23C1553D' stroke-width='0.5' stroke-opacity='0.05' fill='none'/%3E%3C/svg%3E");
+}
+
+/* Category Hairline Borders for Pure White Stat Cards */
+.card-gold {
+  background-color: #ffffff;
+  border: 1px solid rgba(232, 169, 59, 0.35);
+}
+
+.card-teal {
+  background-color: #ffffff;
+  border: 1px solid rgba(43, 110, 122, 0.35);
+}
+
+.card-terracotta {
+  background-color: #ffffff;
+  border: 1px solid rgba(193, 85, 61, 0.35);
+}
+
+.card-plum {
+  background-color: #ffffff;
+  border: 1px solid rgba(155, 61, 107, 0.35);
+}
+
+.card-coral {
+  background-color: #ffffff;
+  border: 1px solid rgba(217, 85, 44, 0.35);
+}
+
+.card-green {
+  background-color: #ffffff;
+  border: 1px solid rgba(47, 143, 110, 0.35);
+}
+
+/* Apple HIG Card Surfaces & Shadows */
+.apple-card {
+  background-color: #ffffff;
+  border-radius: 1.25rem; /* 20px */
+  border: 1px solid #e5e5ea;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 8px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-card:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 12px 28px rgba(0, 0, 0, 0.07);
+}
+
+/* Primary Button Gradient Style (10px Radius) */
+.btn-primary {
+  background: linear-gradient(180deg, #c95b42 0%, #b04b34 100%);
+  color: #ffffff;
+  border: 1px solid #a6412b;
+  border-radius: 10px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(193, 85, 61, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, #b84e36 0%, #9e3e28 100%);
+}
+
+/* Secondary Button Style (10px Radius) */
+.btn-secondary {
+  background-color: #ffffff;
+  color: #1d1d1f;
+  border: 1px solid #d2d2d7;
+  border-radius: 10px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #f5f5f7;
+  border-color: #c7c7cc;
+}
+
+/* Category Chips / Badges */
+.chip-silk {
+  background-color: #fff8e7;
+  color: #9e5d00;
+  border: 1px solid #f5e2b3;
+  font-weight: 600;
+}
+
+.chip-cotton {
+  background-color: #eaf4f6;
+  color: #1b4b56;
+  border: 1px solid #c5e1e6;
+  font-weight: 600;
+}
+
+.chip-plum {
+  background-color: #f9ebf2;
+  color: #802552;
+  border: 1px solid #f0c2d8;
+  font-weight: 600;
+}
+
+.chip-coral {
+  background-color: #fdf0ed;
+  color: #d9552c;
+  border: 1px solid #f8d4cc;
+  font-weight: 600;
+}
+
+.chip-green {
+  background-color: #eaf5f1;
+  color: #1d6c51;
+  border: 1px solid #bde3d5;
+  font-weight: 600;
+}
+
+.chip-terracotta {
+  background-color: #fdf0ed;
+  color: #c1553d;
+  border: 1px solid #f8d4cc;
+  font-weight: 600;
+}
+
+/* Status Pill Helpers */
+.pill-success {
+  background-color: #e3f5ea;
+  color: #136c3f;
+  border: 1px solid #bde8cc;
+  font-weight: 600;
+}
+
+.pill-warning {
+  background-color: #fdf0ed;
+  color: #d9552c;
+  border: 1px solid #f8d4cc;
+  font-weight: 600;
+}
+
+.pill-neutral {
+  background-color: #f0f0f2;
+  color: #6e6e73;
+  border: 1px solid #e5e5ea;
+  font-weight: 600;
+}
+
+/* Custom Minimal Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d2d2d7;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aeae2e;
+}
+
+/* Keyframe Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes modalScale {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-popover {
+  animation: popoverIn 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal {
+  animation: modalScale 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-up {
+  animation: fadeUp 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Stagger Delays for Page Load Cards */
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 40ms; }
+.stagger-3 { animation-delay: 80ms; }
+.stagger-4 { animation-delay: 120ms; }
+
+/* Accessible Terracotta Focus Ring for Keyboard Navigation */
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #C1553D !important;
+  border-color: #C1553D !important;
+}
+
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible, input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #C1553D !important;
+}
+
+/* Micro-interaction Lift & Press Feedback */
+button:not(:disabled) {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Respect OS Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+    transform: none !important;
+  }
+}
+

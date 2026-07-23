@@ -1,0 +1,6 @@
+{
+  "name": "Kalam Kaari",
+  "description": "Accounting, inventory, paint bottle expense distribution, and profit ledger tailored for custom cloth painting business.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
