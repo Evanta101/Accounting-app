@@ -8,7 +8,8 @@ import {
   Users, 
   TrendingUp, 
   PlusCircle, 
-  RotateCcw
+  RotateCcw,
+  FileSpreadsheet
 } from 'lucide-react';
 import { BusinessSummary } from '../types';
 import { ConfirmPopover } from './ConfirmPopover';
@@ -21,6 +22,7 @@ interface NavbarProps {
   onOpenNewSale: () => void;
   onOpenNewCloth: () => void;
   onOpenNewPaint: () => void;
+  onOpenBackupModal: () => void;
   onResetData: () => void;
 }
 
@@ -31,6 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNewSale,
   onOpenNewCloth,
   onOpenNewPaint,
+  onOpenBackupModal,
   onResetData,
 }) => {
   const { showToast } = useToast();
@@ -92,6 +95,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-2">
+          <button
+            onClick={onOpenBackupModal}
+            className="flex items-center space-x-1.5 text-[#1D1D1F] bg-[#FAF9F6] hover:bg-[#F5F3EE] px-3 py-2 rounded-xl border border-[#D2D2D7] text-xs font-medium transition cursor-pointer"
+            title="Excel Backups & Data Safety"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-[#2F8F6E]" />
+            <span className="hidden sm:inline">Excel Backups</span>
+          </button>
+
           <button
             onClick={onOpenNewSale}
             className="btn-primary font-medium text-xs sm:text-sm px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5"

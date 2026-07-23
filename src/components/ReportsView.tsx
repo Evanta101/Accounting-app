@@ -139,11 +139,21 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
           <div className="flex items-center space-x-2 border-l border-[#E5E5EA] pl-3">
             <button
+              onClick={() => {
+                window.open('/api/export-excel', '_blank');
+              }}
+              className="bg-[#2F8F6E] hover:bg-[#237055] text-white font-medium text-xs px-3.5 py-1.5 rounded-xl transition flex items-center space-x-1.5 cursor-pointer shadow-xs"
+              title="Download 7-Sheet Complete Excel Ledger (.xlsx)"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Full Excel (.xlsx)</span>
+            </button>
+            <button
               onClick={exportCSV}
               className="btn-primary font-medium text-xs px-3.5 py-1.5 rounded-xl transition flex items-center space-x-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>CSV</span>
+              <span>Sales CSV</span>
             </button>
             <button
               onClick={handlePrint}

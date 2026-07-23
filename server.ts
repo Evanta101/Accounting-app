@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import XLSX from 'xlsx';
 import { createServer as createViteServer } from 'vite';
 import { 
   ClothItem, 
@@ -23,6 +24,11 @@ import {
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+if (!fs.existsSync(BACKUP_DIR)) {
+  fs.mkdirSync(BACKUP_DIR, { recursive: true });
 }
 
 const DATA_FILE = path.join(DATA_DIR, 'studio_data.json');
@@ -57,10 +63,166 @@ function loadData() {
   }
 }
 
+function createExcelWorkbook() {
+  const wb = XLSX.utils.book_new();
+
+  // 1. Sales Sheet
+  const salesData = sales.map((s, idx) => {
+    const pending = Math.max(0, s.sellingPrice - (s.amountReceived || 0));
+    const profit = s.sellingPrice - (s.clothPurchaseCost || 0) - (s.paintCostAllocated || 0);
+    return {
+      'S.No': idx + 1,
+      'Invoice / Ref': s.id,
+      'Date': s.date,
+      'Customer Name': s.customerName,
+      'Location': s.location || '',
+      'Item Description': s.clothTypeSnapshot || '',
+      'Fabric Category': s.fabricCategorySnapshot || '',
+      'Is Customer Cloth?': s.isCustomerCloth ? 'Yes' : 'No',
+      'Selling Price (₹)': s.sellingPrice,
+      'Amount Received (₹)': s.amountReceived,
+      'Outstanding Due (₹)': pending,
+      'Payment Status': pending === 0 ? 'Paid' : (s.amountReceived > 0 ? 'Partial' : 'Unpaid'),
+      'Payment Mode': s.paymentMode || '',
+      'Paints Used': (s.paintNamesSnapshot || []).join(', '),
+      'Allocated Paint Cost (₹)': s.paintCostAllocated || 0,
+      'Cloth Purchase Cost (₹)': s.clothPurchaseCost || 0,
+      'Net Item Profit (₹)': profit,
+      'Notes': s.notes || ''
+    };
+  });
+  const salesWs = XLSX.utils.json_to_sheet(salesData.length > 0 ? salesData : [{}]);
+  XLSX.utils.book_append_sheet(wb, salesWs, 'Sales Register');
+
+  // 2. Cloth Stock Sheet
+  const clothData = cloths.map((c, idx) => ({
+    'S.No': idx + 1,
+    'Cloth ID': c.id,
+    'Cloth Type': c.clothType,
+    'Custom Label': c.customTypeLabel || '',
+    'Fabric Category': c.fabricCategory,
+    'Purchase Date': c.purchaseDate,
+    'Purchase Cost (₹)': c.purchaseCost,
+    'Purchase Location': c.purchaseLocation || '',
+    'Vendor Name': c.vendorName || '',
+    'Quantity': c.quantity,
+    'Status': c.status,
+    'Notes': c.notes || ''
+  }));
+  const clothWs = XLSX.utils.json_to_sheet(clothData.length > 0 ? clothData : [{}]);
+  XLSX.utils.book_append_sheet(wb, clothWs, 'Cloth Stock');
+
+  // 3. Paint Inventory Sheet
+  const paintData = paints.map((p, idx) => ({
+    'S.No': idx + 1,
+    'Bottle ID': p.id,
+    'Brand & Color': p.brandName,
+    'Category': p.category,
+    'Bottle Cost (₹)': p.purchaseCost,
+    'Purchase Date': p.purchaseDate,
+    'Vendor Name': p.vendorName || '',
+    'Times Used Count': p.timesUsedCount || 0,
+    'Finished / Fully Used?': p.isFullyUtilized ? 'Yes' : 'No',
+    'Date Finished': p.fullyUtilizedDate || '',
+    'Description / Notes': p.description || ''
+  }));
+  const paintWs = XLSX.utils.json_to_sheet(paintData.length > 0 ? paintData : [{}]);
+  XLSX.utils.book_append_sheet(wb, paintWs, 'Paint Inventory');
+
+  // 4. Expenses Sheet
+  const expenseData = expenses.map((e, idx) => ({
+    'S.No': idx + 1,
+    'Expense ID': e.id,
+    'Date': e.date,
+    'Category': e.category,
+    'Amount (₹)': e.amount,
+    'Description': e.description || ''
+  }));
+  const expenseWs = XLSX.utils.json_to_sheet(expenseData.length > 0 ? expenseData : [{}]);
+  XLSX.utils.book_append_sheet(wb, expenseWs, 'Misc Expenses');
+
+  // 5. Customers Sheet
+  const customerData = customers.map((c, idx) => ({
+    'S.No': idx + 1,
+    'Customer ID': c.id,
+    'Name': c.name,
+    'Phone': c.phone || '',
+    'City': c.city || '',
+    'Address': c.address || '',
+    'Notes': c.notes || ''
+  }));
+  const custWs = XLSX.utils.json_to_sheet(customerData.length > 0 ? customerData : [{}]);
+  XLSX.utils.book_append_sheet(wb, custWs, 'Customers');
+
+  // 6. Vendors Sheet
+  const vendorData = vendors.map((v, idx) => ({
+    'S.No': idx + 1,
+    'Vendor ID': v.id,
+    'Shop / Business Name': v.shopName,
+    'Category': v.category,
+    'Contact Person': v.contactPerson || '',
+    'Phone': v.phone || '',
+    'City': v.city || '',
+    'Notes': v.notes || ''
+  }));
+  const vendWs = XLSX.utils.json_to_sheet(vendorData.length > 0 ? vendorData : [{}]);
+  XLSX.utils.book_append_sheet(wb, vendWs, 'Vendors');
+
+  // 7. Business Summary Sheet
+  const summary = calculateSummary();
+  const summaryData = [
+    { 'Metric': 'Total Sales Revenue (₹)', 'Value': summary.totalRevenue },
+    { 'Metric': 'Total Cloth Purchase Cost Sold (₹)', 'Value': summary.totalClothCostSold },
+    { 'Metric': 'Total Paint Cost Allocated (₹)', 'Value': summary.totalPaintCostAllocated },
+    { 'Metric': 'Total Misc Expenses (₹)', 'Value': summary.totalMiscExpenses },
+    { 'Metric': 'Net Operating Profit (₹)', 'Value': summary.netProfit },
+    { 'Metric': 'Profit Margin (%)', 'Value': `${summary.profitMarginPct.toFixed(1)}%` },
+    { 'Metric': 'In-Stock Cloth Inventory Value (₹)', 'Value': summary.inStockClothValue },
+    { 'Metric': 'In-Stock Cloth Count', 'Value': summary.inStockClothCount },
+    { 'Metric': 'Pending Customer Dues (₹)', 'Value': summary.totalPendingCustomerDues },
+    { 'Metric': 'Pending Dues Count', 'Value': summary.pendingDuesCount },
+    { 'Metric': 'Active Paint Bottles Count', 'Value': summary.activePaintsCount },
+  ];
+  const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+  return wb;
+}
+
+function saveExcelBackup() {
+  try {
+    const wb = createExcelWorkbook();
+    // 1. Save to Latest copy
+    const latestPath = path.join(BACKUP_DIR, 'Kalam_Kaari_Latest.xlsx');
+    XLSX.writeFile(wb, latestPath);
+
+    // 2. Save timestamped backup copy
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '-');
+    const timePath = path.join(BACKUP_DIR, `Kalam_Kaari_Backup_${dateStr}_${timeStr}.xlsx`);
+    XLSX.writeFile(wb, timePath);
+
+    // Clean up older backups if more than 50 files exist to keep disk tidy
+    const files = fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith('.xlsx') && f !== 'Kalam_Kaari_Latest.xlsx');
+    if (files.length > 50) {
+      files.sort((a, b) => {
+        return fs.statSync(path.join(BACKUP_DIR, b)).mtimeMs - fs.statSync(path.join(BACKUP_DIR, a)).mtimeMs;
+      });
+      for (let i = 50; i < files.length; i++) {
+        try { fs.unlinkSync(path.join(BACKUP_DIR, files[i])); } catch {}
+      }
+    }
+  } catch (err) {
+    console.error('Error generating Excel backup:', err);
+  }
+}
+
 function saveData() {
   try {
     const data = { cloths, paints, sales, expenses, customers, vendors };
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    saveExcelBackup();
   } catch (err) {
     console.error('Error writing studio_data.json:', err);
   }
@@ -359,6 +521,124 @@ async function startServer() {
       vendors,
       summary: calculateSummary(),
     });
+  });
+
+  // Excel & Data Backup Endpoints
+  app.get('/api/backups', (req, res) => {
+    try {
+      if (!fs.existsSync(BACKUP_DIR)) {
+        return res.json({ success: true, files: [] });
+      }
+      const fileNames = fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith('.xlsx'));
+      const files = fileNames.map(fileName => {
+        const filePath = path.join(BACKUP_DIR, fileName);
+        const stats = fs.statSync(filePath);
+        return {
+          name: fileName,
+          sizeKb: Math.round(stats.size / 1024),
+          createdAt: stats.birthtime.toISOString(),
+          modifiedAt: stats.mtime.toISOString(),
+          isLatest: fileName === 'Kalam_Kaari_Latest.xlsx'
+        };
+      });
+      // Sort newest first
+      files.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
+      res.json({ success: true, files, backupDir: BACKUP_DIR });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to list backups' });
+    }
+  });
+
+  app.get('/api/backups/download/:filename', (req, res) => {
+    try {
+      const filename = path.basename(req.params.filename);
+      const filePath = path.join(BACKUP_DIR, filename);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).send('Backup file not found');
+      }
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.sendFile(filePath);
+    } catch (err) {
+      res.status(500).send('Error downloading file');
+    }
+  });
+
+  app.post('/api/backups/create', (req, res) => {
+    try {
+      saveExcelBackup();
+      const fileNames = fs.readdirSync(BACKUP_DIR).filter(f => f.endsWith('.xlsx'));
+      const files = fileNames.map(fileName => {
+        const filePath = path.join(BACKUP_DIR, fileName);
+        const stats = fs.statSync(filePath);
+        return {
+          name: fileName,
+          sizeKb: Math.round(stats.size / 1024),
+          createdAt: stats.birthtime.toISOString(),
+          modifiedAt: stats.mtime.toISOString(),
+          isLatest: fileName === 'Kalam_Kaari_Latest.xlsx'
+        };
+      });
+      files.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
+      res.json({ success: true, message: 'Excel backup created successfully in data/backups/', files });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to create backup' });
+    }
+  });
+
+  app.get('/api/export-excel', (req, res) => {
+    try {
+      const wb = createExcelWorkbook();
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      const filename = `Kalam_Kaari_Ledger_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(buf);
+    } catch (err) {
+      res.status(500).send('Error exporting Excel workbook');
+    }
+  });
+
+  app.get('/api/export-json', (req, res) => {
+    try {
+      const data = { cloths, paints, sales, expenses, customers, vendors, exportedAt: new Date().toISOString() };
+      const filename = `Kalam_Kaari_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(JSON.stringify(data, null, 2));
+    } catch (err) {
+      res.status(500).send('Error exporting JSON payload');
+    }
+  });
+
+  app.post('/api/import-json', (req, res) => {
+    try {
+      const imported = req.body;
+      if (!imported || typeof imported !== 'object') {
+        return res.status(400).json({ success: false, error: 'Invalid JSON payload' });
+      }
+      cloths = Array.isArray(imported.cloths) ? imported.cloths : cloths;
+      paints = Array.isArray(imported.paints) ? imported.paints : paints;
+      sales = Array.isArray(imported.sales) ? imported.sales : sales;
+      expenses = Array.isArray(imported.expenses) ? imported.expenses : expenses;
+      customers = Array.isArray(imported.customers) ? imported.customers : customers;
+      vendors = Array.isArray(imported.vendors) ? imported.vendors : vendors;
+      
+      saveData();
+      res.json({
+        success: true,
+        message: 'Data successfully imported and backed up',
+        cloths,
+        paints,
+        sales,
+        expenses,
+        customers,
+        vendors,
+        summary: calculateSummary(),
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to import JSON data' });
+    }
   });
 
   // Vite Middleware in Dev Mode
