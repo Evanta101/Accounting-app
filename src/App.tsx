@@ -7,7 +7,6 @@ import { PaintsView } from './components/PaintsView';
 import { ExpensesView } from './components/ExpensesView';
 import { ProfilesView } from './components/ProfilesView';
 import { ReportsView } from './components/ReportsView';
-import { QuestionsModal } from './components/QuestionsModal';
 import { ToastProvider } from './context/ToastContext';
 import { 
   ClothItem, 
@@ -35,7 +34,6 @@ export default function App() {
 
   // Modals & Direct Triggers
   const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState<boolean>(false);
-  const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState<boolean>(false);
   const [preselectedClothForSale, setPreselectedClothForSale] = useState<ClothItem | null>(null);
 
   // Fetch initial data from server
@@ -281,7 +279,6 @@ export default function App() {
           onOpenNewPaint={() => {
             setActiveTab('paints');
           }}
-          onOpenQuestions={() => setIsQuestionsModalOpen(true)}
           onResetData={handleResetData}
         />
 
@@ -394,12 +391,6 @@ export default function App() {
             </>
           )}
         </main>
-
-        {/* Questions Modal */}
-        <QuestionsModal
-          isOpen={isQuestionsModalOpen}
-          onClose={() => setIsQuestionsModalOpen(false)}
-        />
 
         {/* Footer */}
         <footer className="bg-white text-[#6E6E73] border-t border-[#E5E5EA] py-6 text-center text-xs mt-12">

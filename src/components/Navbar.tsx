@@ -8,7 +8,6 @@ import {
   Users, 
   TrendingUp, 
   PlusCircle, 
-  HelpCircle,
   RotateCcw
 } from 'lucide-react';
 import { BusinessSummary } from '../types';
@@ -22,7 +21,6 @@ interface NavbarProps {
   onOpenNewSale: () => void;
   onOpenNewCloth: () => void;
   onOpenNewPaint: () => void;
-  onOpenQuestions: () => void;
   onResetData: () => void;
 }
 
@@ -33,7 +31,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNewSale,
   onOpenNewCloth,
   onOpenNewPaint,
-  onOpenQuestions,
   onResetData,
 }) => {
   const { showToast } = useToast();
@@ -101,15 +98,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <PlusCircle className="w-4 h-4" />
             <span>New Sale</span>
-          </button>
-
-          <button
-            onClick={onOpenQuestions}
-            className="flex items-center space-x-1 text-[#1D1D1F] bg-white hover:bg-[#F5F5F7] px-3 py-2 rounded-xl border border-[#D2D2D7] text-xs font-medium transition cursor-pointer"
-            title="Questions & Options"
-          >
-            <HelpCircle className="w-4 h-4 text-[#6E6E73]" />
-            <span className="hidden md:inline">Key Qs</span>
           </button>
 
           <ConfirmPopover
